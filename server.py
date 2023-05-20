@@ -1,5 +1,7 @@
 import datetime
+import logging
 import typing
+import uuid
 
 import aiohttp
 import fastapi
@@ -13,6 +15,12 @@ import jservice_api
 import exceptions
 
 app = fastapi.FastAPI()
+logger = logging.getLogger(__name__)
+
+
+def query_logger(query_id: uuid.UUID, message: str, function: typing.Callable):
+    """Add :query_id: to logger message for understanding, with which query there was a problem"""
+    function(f"{query_id}| {message}")
 
 
 @app.post("/")
@@ -24,21 +32,30 @@ async def index(
         session=db_session,
         column_name="api_question_id"
     )
+    query_id = uuid.uuid4()
 
+    query_logger(query_id, f"start to handle index, questions_num={questions_num.questions_num}", logger.info)
     questions_to_add = []
     made_queries = 0
     async with aiohttp.ClientSession() as aiohttp_session:
         while len(questions_to_add) < questions_num.questions_num:
             if made_queries == data_models.settings.search_questions_queries_limit:
+                query_logger(query_id, "the limit of queries to find questions overflowed", logger.warning)
                 raise exceptions.QueriesLimitException
 
             need_questions_num = questions_num.questions_num - len(questions_to_add)  # acts like greedy algorithm
+            query_logger(
+                query_id,
+                f"api query number {made_queries + 1}, try to find {need_questions_num} questions",
+                logger.debug
+            )
             # no need to handle errors, because these is key functionality and errors in these functionality means 500
             questions = await jservice_api.get_random_questions(aiohttp_session, need_questions_num)
             not_in_db_questions = [question for question in questions if question["id"] not in unique_api_question_ids]
             questions_to_add += not_in_db_questions[:need_questions_num]
             made_queries += 1
 
+    query_logger(query_id, "questions found, serialize to db", logger.debug)
     db_questions = [
         db_models.Question(
             api_question_id=question["id"],
@@ -53,19 +70,28 @@ async def index(
         in questions_to_add
     ]
 
+    query_logger(query_id, "questions serialized, searching previous question", logger.debug)
     previous_questions = db_models.Question.get_previous_questions(session=db_session)
 
+    query_logger(
+        query_id,
+        f"found {len(previous_questions)} previous questions, try to save serialized questions",
+        logger.debug
+    )
     try:
         db_session.bulk_save_objects(db_questions)
         db_session.commit()
+        query_logger(query_id, "successful: questions saved", logger.debug)
     except sqlalchemy.exc.IntegrityError:
         db_session.rollback()
+        query_logger(query_id, "unsuccessful: can't save questions", logger.debug)
         raise exceptions.CannotSaveQuestionsError
 
     return previous_questions
 
 
 def main():
+    logging.basicConfig(level=data_models.settings.logging_level)
     uvicorn.run(app)
 
 
