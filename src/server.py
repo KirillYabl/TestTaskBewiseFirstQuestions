@@ -56,6 +56,7 @@ async def index(
             made_queries += 1
 
     query_logger(query_id, "questions found, serialize to db", logger.debug)
+    created_at = datetime.datetime.now(tz=datetime.timezone.utc)
     db_questions = [
         db_models.Question(
             api_question_id=question["id"],
@@ -65,6 +66,7 @@ async def index(
                 question["created_at"],
                 data_models.settings.jservice_api_date_format
             ),
+            created_at=created_at,
         )
         for question
         in questions_to_add
