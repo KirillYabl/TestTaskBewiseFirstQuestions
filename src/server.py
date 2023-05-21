@@ -8,6 +8,7 @@ import fastapi
 import sqlalchemy.orm
 import sqlalchemy.exc
 import uvicorn
+from fastapi.logger import logger
 
 import data_models
 import db_models
@@ -15,7 +16,7 @@ import jservice_api
 import exceptions
 
 app = fastapi.FastAPI()
-logger = logging.getLogger(__name__)
+# logger = logging.getLogger(__name__)
 
 
 def query_logger(query_id: uuid.UUID, message: str, function: typing.Callable):
@@ -94,7 +95,7 @@ async def index(
 
 def main():
     logging.basicConfig(level=data_models.settings.logging_level)
-    uvicorn.run(app)
+    uvicorn.run(app, host=data_models.settings.api_host, port=data_models.settings.api_port)
 
 
 if __name__ == '__main__':

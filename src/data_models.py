@@ -17,6 +17,8 @@ class Settings(pydantic.BaseSettings):
     postgres_host: str = "db"
     postgres_port: int = 5432
     db_string: typing.Optional[str] = None
+    api_host: str = "0.0.0.0"
+    api_port: int = 8000
 
     @pydantic.validator("logging_level", always=True)
     def transform_int_to_level(cls, v: int) -> int:
