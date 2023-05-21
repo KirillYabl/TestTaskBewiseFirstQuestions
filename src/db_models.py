@@ -1,11 +1,22 @@
 import datetime
 import functools
+import time
 
 import sqlalchemy.orm
+import sqlalchemy.exc
 
-db_string = "sqlite+pysqlite:///db.sqlite3"
+import data_models
 
-engine = sqlalchemy.create_engine(db_string)
+db_string = data_models.settings.db_string
+
+while True:
+    try:
+        engine = sqlalchemy.create_engine(db_string, pool_pre_ping=True)
+        engine.connect()
+        break
+    except sqlalchemy.exc.OperationalError:
+        time.sleep(0.1)
+
 SessionLocal = sqlalchemy.orm.sessionmaker(autocommit=False, autoflush=False, bind=engine)
 base = sqlalchemy.orm.declarative_base()
 
@@ -73,4 +84,4 @@ class Question(base):
 
 
 if __name__ == '__main__':
-    base.metadata.create_all(engine, checkfirst=True)  # Explicit is better than implicit.
+    base.metadata.create_all(engine, checkfirst=True)  # checkfirst=True - Explicit is better than implicit.
