@@ -16,6 +16,7 @@ class Settings(pydantic.BaseSettings):
     postgres_user: str = "USER_NAME"
     postgres_host: str = "db"
     postgres_port: int = 5432
+    postgres_db: str = "DB_NAME"
     db_string: typing.Optional[str] = None
     api_host: str = "0.0.0.0"
     api_port: int = 8000

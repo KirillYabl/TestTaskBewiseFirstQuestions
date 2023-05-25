@@ -25,7 +25,7 @@ class Database:
     def __init__(self):
         self._session = SessionLocal()
 
-    def get_session(self):
+    def get_session(self) -> sqlalchemy.orm.Session:
         return self._session
 
 

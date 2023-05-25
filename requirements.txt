@@ -1,5 +1,8 @@
 aiohttp==3.8.4
 fastapi==0.95.2
+httpx==0.24.1
 psycopg2-binary==2.9.6
+pytest-asyncio==0.21.0
+pytest-env==0.8.1
 SQLAlchemy==2.0.13
 uvicorn[standard]==0.22.0
