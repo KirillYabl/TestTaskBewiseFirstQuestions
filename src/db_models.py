@@ -1,5 +1,6 @@
 import datetime
 import functools
+import logging
 import time
 
 import sqlalchemy.orm
@@ -7,15 +8,22 @@ import sqlalchemy.exc
 
 import data_models
 
+logger = logging.getLogger(__name__)
 db_string = data_models.settings.db_string
 
+stime = time.time()
+warning_seconds = 60
 while True:
     try:
+        logger.debug("trying connect to db...")
         engine = sqlalchemy.create_engine(db_string, pool_pre_ping=True)
         engine.connect()
         break
     except sqlalchemy.exc.OperationalError:
         time.sleep(0.1)
+        if time.time() - stime > warning_seconds:
+            logger.warning(f"can't connect for {warning_seconds} seconds (db_string={db_string})")
+            stime = time.time()
 
 SessionLocal = sqlalchemy.orm.sessionmaker(autocommit=False, autoflush=False, bind=engine)
 base = sqlalchemy.orm.declarative_base()
@@ -85,3 +93,4 @@ class Question(base):
 
 if __name__ == '__main__':
     base.metadata.create_all(engine, checkfirst=True)  # checkfirst=True - Explicit is better than implicit.
+    logger.info("db created successfully")
